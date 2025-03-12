@@ -1,4 +1,7 @@
 # Organic Social Dashboard
+<p align="center">
+  <img src="demo/preview.png" alt="Dashboard Preview" width="600"/>
+</p>
 
 ## Project Details
 This GitHub repository contains an interactive dashboard built with Python, Plotly, and Dash to visualize engagement data from LinkedIn.
