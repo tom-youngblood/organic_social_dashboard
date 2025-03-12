@@ -1,7 +1,7 @@
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objs as go
-from dash import Dash, html, dcc, callback, Input, Output
+from dash import Dash, html, dcc, callback, Input, Output, dash_table
 
 class Graphing:
     def funnel(funnel_df):
@@ -15,6 +15,7 @@ class Graphing:
 
         ))
 
+        # Update funnel figure
         funnel_fig.update_layout(autosize=True,
                                  margin=dict(l=200, r=10, t=80, b=50),
                                  title={"text": "Stage Funnel",
@@ -28,6 +29,7 @@ class Graphing:
         return funnel_fig
 
     def social_stage_pie(social_stage_pie_df):
+        """Returns pie chart: lead stage (plotly figure)"""
         # Create pie fig
         pie_fig = px.pie(social_stage_pie_df,
                  names="Stage",
@@ -52,6 +54,7 @@ class Graphing:
         return pie_fig
 
     def industry_dist_pie(industry_stage_pie_df):
+        """Returns pie chart: industry distribution (plotly figure)"""
         # Create pie fig
         pie_fig = px.pie(industry_stage_pie_df,
                  names="Industry",
@@ -75,9 +78,68 @@ class Graphing:
         return pie_fig
 
     def leads_over_time_area(leads_over_time_df):
+        """Returns bar chart (previously area): leads over time (plotly figure)"""
         # Leads Over Time
         leads_over_time_fig = px.bar(leads_over_time_df, x="Date", y="Count")
+        # Title
+        leads_over_time_fig.update_layout(
+            title={
+            "text": "Leads Over Time",
+            "x": 0.5,
+            "xanchor": "center"
+            }
+        )
         return leads_over_time_fig
+
+    def lead_table(filtered_df):
+        """Creates DataFrame containing leads under the current filter."""
+        # Plotly go table figure
+        table_fig = go.Figure(
+            data=[go.Table(
+                header=dict(values=list(filtered_df.columns)),
+                cells=dict(values=[filtered_df[col].tolist() for col in filtered_df.columns])
+            )]
+        )
+
+        # Title table
+        table_fig.update_layout(title={
+            "text": "Filtered Lead Table",
+            "x": 0.5,
+            "xanchor": "center"})
+        return table_fig
+
+    def post_distribution_sankey(post_distribution_sankey_df):
+        """Creates sankey plot: post distribution (plotly figure)"""
+        # Further prep data
+        post_names = list(post_distribution_sankey_df["post_name"].unique())
+        stages = list(post_distribution_sankey_df["organic_social_stage"].unique())
+        labels = post_names + stages
+        num_posts = len(post_names)
+        source = [post_names.index(p) for p in post_distribution_sankey_df["post_name"]]
+        target = [stages.index(s) + num_posts for s in post_distribution_sankey_df["organic_social_stage"]]
+        values = post_distribution_sankey_df["vid"].tolist()
+
+        # Sankey figure
+        sankey_fig = go.Figure(data=[go.Sankey(
+            node=dict(
+                label=labels
+            ),
+            link=dict(
+                source=source,
+                target=target,
+                value=values
+            )
+        )])
+
+        # Title sankey figure
+        sankey_fig.update_layout(
+            title={
+                "text": "Lead Flow: Post to Organic Social Stage",
+                "x": 0.5,
+                "xanchor": "center"
+            }
+        )
+        return sankey_fig
 
 class DataProcessing:
     def process_data(path):
@@ -180,8 +242,11 @@ class DataProcessing:
 
     def prep_leads_over_time_data(filtered_df):
         """Prepares DataFrame for leads_over_time_bar"""
-
         return filtered_df.groupby("createdate")["vid"].count().reset_index().rename(columns={"createdate": "Date", "vid": "Count"})
+
+    def prep_post_distribution_sankey_data(filtered_df):
+        """Prepares DataFrame for post_distribution_sankey"""
+        return filtered_df.groupby(["post_name", "organic_social_stage"])["vid"].count().reset_index()
 
 class Interaction:
     def date_picker_range(df):
@@ -193,11 +258,26 @@ class Interaction:
             display_format="YYYY-MM-DD"
         )
 
-    def industry_picker_range(df):
-        """Returns industry picker object"""
-        return dcc.DatePickerRange(
-            id="date-picker",
-            start_date=df["createdate"].min(),
-            end_date=df["createdate"].max(),
-            display_format="YYYY-MM-DD"
-        )
+    def industry_dd(df):
+        """Returns industry dropdown object"""
+        industry_options = ["Industry"] + df["industry"].dropna().unique().tolist()
+        return dcc.Dropdown(id="industry-dd",
+                            options = industry_options,
+                            value="Industry"
+                            )
+
+    def post_dd(df):
+        """Returns industry dropdown object"""
+        post_options = ["Post Name"] + df["post_name"].dropna().unique().tolist()
+        return dcc.Dropdown(id="post-dd",
+                            options = post_options,
+                            value="Post Name"
+                            )
+
+    def venture_backed_dd(df):
+        """Returns venture backed dropdown object"""
+        vb_options = ["Latest Funding Stage"] + df["latest_funding_stage"].dropna().unique().tolist()
+        return dcc.Dropdown(id="vb-dd",
+                            options = vb_options,
+                            value="Latest Funding Stage"
+                            )
