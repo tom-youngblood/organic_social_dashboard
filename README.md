@@ -40,3 +40,12 @@ organic_social_dashboard/
 cd scripts
 python dashboard.py
 ```
+
+### Interactivity
+Dashboard allows for filtering by:
+- **Date**: Date in which lead was scraped
+- **Industry**: Industry of corresponding lead
+- **Post**: Post from which lead was scraped from
+- **Latest Funding Stage**: Most recently reported (within Apollo DB) stage of company
+
+Note: All filters can be applied at the same time.
